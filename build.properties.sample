@@ -1,0 +1,31 @@
+# copy this to build.properties and change as needed
+
+# core settings
+mxn.dir=../mxn
+yuicompressor.jar=C:/Program Files/yuicompressor/build/yuicompressor.jar
+jsdoc-toolkit.dir=C:/Program Files/jsdoc-toolkit
+rhino.jar=${mxn.dir}/tools/rhino/js.jar
+jslint.js=${mxn.dir}/tools/jslint/jslint.js
+svnant.dir=C:/Program Files/apache-ant/lib/svnant-1.3.0
+
+# settings for tests
+test.names =basicLoadTests,jsonLoadTests,jsonpLoadTests,kmlLoadTests,\
+            geoRSSTests,kmlTests,basicPlacemarkTests,kmlPlacemarkTests,\
+            missingElementTests,deletionTests,visibilityTests,\
+            timeParserTests,scrollToTests,iterationTests,themeTests
+map.apis=google,googlev3,openlayers,microsoft
+timeline.apis=12,230
+tests.use.packed.dev=false
+mxn.test.url.base.dev=../../mxn/source/mxn.js
+timeline.test.url.12=../lib/timeline-1.2.js
+timeline.test.url.230=../lib/timeline-2.3.0.js
+map.test.url.google=http://maps.google.com/maps?file=api&v=2&key=ABQIAAAASI0kCI-azC8RgbOZzWc3VRRarOQe_TKf_51Omf6UUSOFm7EABRRhO0PO4nBAO9FCmVDuowVwROLo3w
+map.test.url.googlev3=http://maps.google.com/maps/api/js?sensor=false
+map.test.url.openlayers=http://openlayers.org/api/OpenLayers.js
+map.test.url.yahoo=http://api.maps.yahoo.com/ajaxymap?v=3.8&appid=MJmMF_XV34Fbt9iTJluolVk7T80lw8lD.lykqztF7S9F8szGFR01um.Rg5Svbsg.eMmZ
+map.test.url.microsoft=http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6
+
+# settings for distro packages
+distro.version=2.0
+tests.use.packed.distro=true
+mxn.test.url.base.distro=../lib/mxn/mxn.js

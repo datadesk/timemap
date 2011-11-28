@@ -1,0 +1,459 @@
+<?xml version="1.0"?>
+<project name="timemap" default="build">
+<!--
+You will need to create your own build.properties file. 
+See build.properties.sample for example contents.
+Also required: ant-contrib, svnant
+-->
+    <property name="props" value="build.properties"/>
+    <property file="${props}"/>
+    
+    <!-- define ant-contrib tasks -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml">
+        <classpath>
+            <pathelement location="lib/ant-contrib-1.0b3.jar"/>
+        </classpath>
+    </taskdef>
+
+    <!-- define svnant tasks -->
+    <typedef resource="org/tigris/subversion/svnant/svnantlib.xml">
+        <classpath>
+            <fileset dir= "${svnant.dir}" >
+                <include name= "*.jar" />
+            </fileset>
+        </classpath>
+    </typedef>
+    
+    <!-- common properties -->
+    <property name="src.dir" value="src"/>
+    <property name="docs.dir" value="docs"/>
+    <property name="test.dir" value="tests"/>
+    <property name="distro.dir" value="distro"/>
+    <property name="core.packfile" value="timemap.pack.js"/>
+    <property name="full.packfile" value="timemap_full.pack.js"/>
+    <property name="mxn.target" value="lib/mxn"/>
+    <property name="mxn.build.base" value="${mxn.dir}/build"/>
+    <property name="build.suffix" value="_bld"/>
+    
+    <!-- define timemap.js source files -->
+    <path id="source.files">
+        <fileset file="${src.dir}/timemap.js"/>
+        <fileset dir="${src.dir}">
+            <include name="*.js"/>
+            <exclude name="*.pack.*"/>
+        </fileset>
+        <fileset file="${src.dir}/loaders/json.js"/>
+        <fileset file="${src.dir}/loaders/xml.js"/>
+        <fileset dir="${src.dir}/loaders" includes="*.js"/>
+    </path>
+    <path id="source.packfiles">
+        <fileset file="${full.packfile}"/>
+    </path>
+    
+    <target name="jslint">
+    
+        <echo>Timemap.js: Running JSLint</echo>
+        <echo>(using ${jslint.js})</echo>
+        
+        <for param="file">
+            <path refid="source.files"/>
+            <sequential>
+                <echo>Linting @{file}</echo>
+                <java jar="${rhino.jar}" fork="true" failonerror="false">
+                    <arg value="${jslint.js}"/>
+                    <arg value="@{file}"/>
+                </java>
+            </sequential>
+        </for>
+    
+    </target>
+    
+    <target name="clean-mxn">
+        <!-- delete old builds -->
+        <delete dir="${mxn.build.base}" />
+        <delete dir="${mxn.target}" />
+    </target>
+    
+    <target name="mxn" depends="clean-mxn">
+    
+        <echo>Timemap.js: Building Mapstraction</echo>
+        
+        <!-- run the Mapstraction build with a custom version -->
+        <ant dir="${mxn.dir}">
+            <property name="build.ver" value="timemap"/>
+            <property name="build.base" value="${mxn.build.base}"/>
+        </ant>
+        <!-- unzip new build to the lib directory -->
+        <unzip src="${mxn.dir}/build/mxn-timemap.zip" dest="${mxn.target}" />
+        
+    </target>
+    
+    <target name="clean-docs">
+        <delete includeemptydirs="true">
+            <fileset dir="${docs.dir}">
+                <include name="**/*"/>
+                <exclude name="jsdoc-toolkit/*"/>
+            </fileset>
+        </delete>
+    </target>
+    
+    <target name="docs" depends="clean-docs">
+    
+        <echo>Timemap.js: Creating Documentation</echo>
+        
+        <!-- define fileset -->
+        <pathconvert 
+            refid="source.files"
+            property="doc.files" 
+            pathsep="' '"/>
+            
+        <!-- create documentation -->
+        <java jar="${jsdoc-toolkit.dir}/jsrun.jar" fork="true" failonerror="true">
+            <arg value="${jsdoc-toolkit.dir}/app/run.js"/>
+            <arg line="'${doc.files}'"/>
+            <arg value="-c=${docs.dir}/jsdoc-toolkit/timemap.conf"/>
+            <arg value="-d=${docs.dir}"/>
+        </java>
+        
+    </target>
+    
+    <target name="clean-compress">
+        <delete file="${core.packfile}"/>
+        <delete file="${full.packfile}"/>
+    </target>
+    
+    <target name="compress-core">
+        
+        <echo>Timemap.js: Compressing Javascript to ${core.packfile}</echo>
+        
+        <java jar="${yuicompressor.jar}" fork="true" failonerror="true">
+            <arg line="-o ${core.packfile} ${src.dir}/timemap.js"/>
+        </java>
+        
+    </target>
+    
+    <target name="compress-full">
+        
+        <echo>Timemap.js: Compressing Javascript to ${full.packfile}</echo>
+        
+        <for param="file">
+            <path refid="source.files"/>
+            <sequential>
+                <echo>Compressing @{file}</echo>
+                <!-- compress -->
+                <java jar="${yuicompressor.jar}" fork="true" failonerror="true">
+                    <arg line="-o @{file}.pack.tmp @{file}"/>
+                </java>
+                <!-- add to file -->
+                <concat destfile="${full.packfile}" append="yes">
+                    <fileset file="@{file}.pack.tmp"/>
+                </concat>
+                <!-- clean up -->
+                <delete file="@{file}.pack.tmp"/>
+            </sequential>
+        </for>
+        
+    </target>
+    
+    <target name="clean-tests">
+        <!-- delete previous build -->
+        <delete>
+            <fileset dir="${test.dir}" includes="*${build.suffix}.html"/>
+        </delete>
+    </target>
+    
+    <target name="tests" depends="clean-tests">
+        
+        <echo>Timemap.js: Creating Tests</echo>
+        
+        <property name="template.dir" value="${test.dir}/templates"/>
+        <property name="test.page.template" value="${template.dir}/testTemplate.html"/>
+        <property name="test.suite.template" value="${template.dir}/testSuiteTemplate.html"/>
+        <property name="test.page.placeholder" value="&lt;!--SCRIPTS--&gt;"/>
+        <property name="test.suite.placeholder" value="// TESTPAGES"/>
+        <!-- can be overridden in distro -->
+        <property name="tests.used.packed" value="${tests.used.packed.dev}"/>
+        <property name="mxn.test.url.base" value="${mxn.test.url.base.dev}"/>
+        
+        <var name="test.suites" value=""/>
+        
+        <!-- check for packed files if necessary -->
+        <if>
+            <and>
+                <istrue value="${tests.use.packed}"/>
+                <not>
+                    <available file="${full.packfile}"/>
+                </not>
+            </and>
+            <then>
+                <ant target="compress-full"/>
+            </then>
+        </if>
+        
+        <!-- do combinatorix -->
+        <for list="${map.apis}" param="map.api">
+            <sequential>
+                <for list="${timeline.apis}" param="timeline.api">
+                    <sequential>
+                    
+                        <!-- create test pages for this api combo -->
+                        <var name="test.pages" value=""/>
+                        <for list="${test.names}" param="test.name">
+                            <sequential>
+                                <!-- set page variables -->
+                                <var name="test.page" value="@{test.name}_@{map.api}_tl@{timeline.api}${build.suffix}.html"/>
+                                <var name="test.pages" value="${test.pages}${test.page},"/>
+                                
+                                <!-- create the test page -->
+                                <ant target="create-test-page">
+                                    <property name="test.page" value="${test.page}"/>
+                                    <property name="test.name" value="@{test.name}"/>
+                                    <property name="map.api" value="@{map.api}"/>
+                                    <property name="timeline.api" value="@{timeline.api}"/>
+                                </ant>
+                            </sequential>
+                        </for>
+                        
+                        <!-- set suite variables -->
+                        <var name="test.suite" value="suite_@{map.api}_tl@{timeline.api}${build.suffix}.html"/>
+                        <var name="test.suites" value="${test.suites}${test.suite},"/>
+                        
+                        <!-- create the test suite -->
+                        <propertyregex property="test.page.list"
+                            input="${test.pages}"
+                            regexp="(.*),$"
+                            select="\1"
+                            override="true"/>
+                        <ant target="create-test-suite">
+                            <property name="test.suite" value="${test.suite}"/>
+                        </ant>
+                        
+                    </sequential>
+                </for>
+            </sequential>
+        </for>
+        
+        <!-- create the master test suite -->
+        <propertyregex property="test.suite.list"
+            input="${test.suites}"
+            regexp="(.*),$"
+            select="\1"/>
+        <var name="test.suite" unset="true"/>
+        <ant target="create-test-suite">
+            <property name="test.suite" value="suite_master${build.suffix}.html"/>
+            <property name="test.page.list" value="${test.suite.list}"/>
+        </ant>
+    </target>
+    
+    <target name="create-test-page">
+        <echo>Creating test page: ${test.page}</echo>
+        <!-- create file from template -->
+        <property name="test.file" value="${test.dir}/${test.page}"/>
+        <copy file="${test.page.template}" tofile="${test.file}"/>
+        <!-- define api scripts -->
+        <propertycopy property="map.test.url" from="map.test.url.${map.api}" />
+        <property name="mxn.test.url" value="${mxn.test.url.base}?(${map.api})" />
+        <propertycopy property="timeline.test.url" from="timeline.test.url.${timeline.api}" />
+        <!-- get timemap.js scripts from source path -->
+        <condition property="source.files.refid" value="source.packfiles" else="source.files">
+            <istrue value="${tests.use.packed}"/>
+        </condition>
+        <!-- munge source path into urls -->
+        <pathconvert 
+            refid="${source.files.refid}"
+            property="source.test.urls" 
+            pathsep=",">
+            <mapper type="glob" from="${basedir}*" to="..*"/>
+        </pathconvert>
+        <!-- fix path seps -->
+        <propertyregex property="source.test.urls"
+            input="${source.test.urls}"
+            override="true"
+            regexp="\\"
+            replace="/"
+            global="true"/>
+        <!-- special cases for dependencies -->
+        <condition property="dependency.url" value="loadTests.js,">
+            <contains string="${test.name}" substring="LoadTests"/>
+        </condition>
+        <condition property="dependency.url" value="placemarkTests.js,">
+            <contains string="${test.name}" substring="PlacemarkTests"/>
+        </condition>
+        <condition property="dependency.url" value="infoWindowTests.js,">
+            <contains string="${test.name}" substring="InfoWindowTests"/>
+        </condition>
+        <property name="dependency.url" value=""/>
+        <!-- put in script tags -->
+        <property name="script.url.list" value="${map.test.url},${mxn.test.url},${timeline.test.url},${source.test.urls},${dependency.url}${test.name}.js"/>
+        <for list="${script.url.list}" param="script.url">
+            <sequential>
+                <replace file="${test.file}" 
+                    token="${test.page.placeholder}"
+                    value="&lt;script type=&quot;text/javascript&quot; src=&quot;@{script.url}&quot;&gt;&lt;/script&gt;${test.page.placeholder}"/>
+            </sequential>
+        </for>
+    </target>
+    
+    <target name="create-test-suite">
+        <echo>Creating test suite: ${test.suite}</echo>
+        <!-- create file from template -->
+        <property name="suite.file" value="${test.dir}/${test.suite}"/>
+        <copy file="${test.suite.template}" tofile="${suite.file}"/>
+        <!-- put in test names -->
+        <for list="${test.page.list}" param="test.page">
+            <sequential>
+                <replace file="${suite.file}" 
+                    token="${test.suite.placeholder}"
+                    value="'@{test.page}',${test.suite.placeholder}"/>
+            </sequential>
+        </for>
+        <!-- kill trailing comma -->
+        <replace file="${suite.file}" 
+            token=",${test.suite.placeholder}"
+            value=""/>
+        <!-- put in current directory -->
+        <basename property="curr.dir" file="${basedir}"/>
+        <replace file="${suite.file}" 
+            token="timemapdir;"
+            value="timemapdir='${curr.dir}';"/>
+    </target>
+    
+    
+    <target name="clean-distro">
+        <delete dir="${distro.dir}"/>
+    </target>
+    
+    <target name="update-version">
+        
+        <echo>Timemap.js: Updating version to ${distro.version}</echo>
+        
+        <!-- update version number. This may require an svn commit afterwards -->
+        <replaceregexp file="${src.dir}/timemap.js"
+               match="@version (.*)"
+               replace="@version ${distro.version}"
+               byline="true"/>
+        <replaceregexp file="${src.dir}/timemap.js"
+               match="TimeMap.version = &quot;(.*)&quot;;"
+               replace="TimeMap.version = &quot;${distro.version}&quot;;"
+               byline="true"/>
+    </target>
+    
+    <target name="distro" depends="clean-distro, update-version">
+        
+        <echo>Timemap.js: Creating Distribution Packages</echo>
+        
+        <!-- set distro-specific properties -->
+        <property name="tests.used.packed" value="${tests.used.packed.distro}"/>
+        <property name="mxn.test.url.base" value="${mxn.test.url.base.distro}"/>
+        <property name="distro.zip" value="${distro.dir}/timemap.${distro.version}.zip"/>
+        <property name="distro.tgz" value="${distro.dir}/timemap.${distro.version}.tar.gz"/>
+        <property name="distro.tmp.dir" value="${distro.dir}/tmp"/>
+               
+        <!-- run build -->
+        <ant target="build"/>
+        
+        <!-- make our build directory and copy files -->
+        <mkdir dir="${distro.dir}"/>
+        <mkdir dir="${distro.tmp.dir}"/>
+        
+        <copy todir="${distro.tmp.dir}">
+            <fileset dir=".">
+                <exclude name="${distro.dir}/"/>
+                <exclude name="build.*"/>
+            </fileset>
+        </copy>
+        
+        <zip destfile="${distro.zip}" basedir="${distro.tmp.dir}"/>
+        <tar destfile="${distro.tgz}" basedir="${distro.tmp.dir}" compression="gzip"/>
+        
+    </target>
+    
+    <!-- common properties for svn tag and release targets -->
+    <property name="svn.repo.trunk" value="${svn.repo.base}/trunk"/>
+    <property name="svn.repo.tag" value="${svn.repo.base}/tags/${distro.version}"/>
+    <property name="tag.dir" value="${distro.dir}/${distro.version}"/>
+    <property name="tag.dir.mxn" value="${tag.dir}/${mxn.target}"/>
+    <property name="tag.dir.docs" value="${tag.dir}/${docs.dir}"/>
+    <property name="tag.dir.tests" value="${tag.dir}/${test.dir}"/>
+    
+    <target name="tag-and-release"><!-- depends="distro" -->
+        
+        <echo>Timemap.js: Tag and Release Version ${distro.version}</echo>
+        
+        <!-- populate properties, check if modified -->
+        <svn>
+            <wcVersion path="" prefix="svn."/>
+        </svn>
+        <!--
+        <fail if="${svn.modified}" message="The working copy is modified - shouldn't you commit first?"/>
+        -->
+        
+        <mkdir dir="${tag.dir}"/>
+        
+        <svn username="${svn.username}" password="${svn.password}">
+            <!-- Make tag -->
+            <copy 
+                srcUrl="${svn.repo.trunk}" 
+                destUrl="${svn.repo.tag}" 
+                message="Tag and release: ${distro.version}"/>
+        
+            <!-- get tag -->
+            <checkout url="${svn.repo.tag}" destPath="${tag.dir}"/>
+        </svn>
+        
+        <!-- copy files to tag dir -->
+        <copy todir="${tag.dir.mxn}">
+            <fileset dir="${mxn.target}"/>
+        </copy>
+        <copy todir="${tag.dir.docs}">
+            <fileset dir="${docs.dir}"/>
+        </copy>
+        <copy todir="${tag.dir.tests}">
+            <fileset dir="${test.dir}" includes="*${build.suffix}.html"/>
+        </copy>
+        
+        <!-- svn add new files -->
+        <svn username="${svn.username}" password="${svn.password}">
+            <add dir="${tag.dir.mxn}"/>
+            <add dir="${tag.dir.docs}" force="true"/>
+            <add dir="${tag.dir.tests}" force="true"/>
+            <commit dir="${tag.dir}" message="Adding generated files to ${distro.version} tag"/>
+        </svn>
+        
+        <ant target="svn-prop-set"/>
+    
+    </target>
+    
+    <target name="svn-prop-set">
+        <path id="html.files">
+            <fileset dir="${tag.dir.docs}">
+                <include name="**/*.html"/>
+            </fileset>
+        </path>
+        <for param="file">
+            <path refid="html.files"/>
+            <sequential>
+                <echo>Setting props on @{file}</echo>
+                <path refid="docs.html"/>
+                <svn username="${svn.username}" password="${svn.password}">
+                    <propset name="svn:executable" value="*" path="@{file}"/>
+                    <propset name="svn:mime-type" value="text/html" path="@{file}"/>
+                </svn>
+            </sequential>
+        </for>
+        <svn username="${svn.username}" password="${svn.password}">
+            <commit dir="${tag.dir}" message="Setting svn properties on HTML files"/>
+        </svn>
+    </target>
+    
+    <!-- target suites -->
+    
+    <target name="compress" depends="clean-compress,compress-core,compress-full"/>
+
+    <target name="clean" depends="clean-compress,clean-mxn,clean-tests,clean-docs,clean-distro"/>
+    
+    <target name="build" depends="mxn,docs,compress,tests"/>
+    
+    <target name="post-distro" depends="update-version,clean-distro,build"/>
+    
+</project>

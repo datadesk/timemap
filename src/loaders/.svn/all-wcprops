@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/376/trunk/src/loaders
+END
+metaweb.js
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/342/trunk/src/loaders/metaweb.js
+END
+progressive.js
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/342/trunk/src/loaders/progressive.js
+END
+json.js
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/342/trunk/src/loaders/json.js
+END
+flickr.js
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/342/trunk/src/loaders/flickr.js
+END
+xml.js
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/342/trunk/src/loaders/xml.js
+END
+georss.js
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/358/trunk/src/loaders/georss.js
+END
+kml.js
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/376/trunk/src/loaders/kml.js
+END
+google_spreadsheet.js
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/342/trunk/src/loaders/google_spreadsheet.js
+END

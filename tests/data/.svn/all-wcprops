@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 34
+/svn/!svn/ver/376/trunk/tests/data
+END
+data.rss
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/120/trunk/tests/data/data.rss
+END
+tile.png
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/120/trunk/tests/data/tile.png
+END
+test.kml
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/376/trunk/tests/data/test.kml
+END
+data.js
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/232/trunk/tests/data/data.js
+END
+placemarks.kml
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/375/trunk/tests/data/placemarks.kml
+END
+data-atom.xml
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/120/trunk/tests/data/data-atom.xml
+END
+data_string.js
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/169/trunk/tests/data/data_string.js
+END
+data.kml
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/169/trunk/tests/data/data.kml
+END
+data-mixed.xml
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/278/trunk/tests/data/data-mixed.xml
+END
